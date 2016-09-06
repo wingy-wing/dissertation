@@ -1,0 +1,49 @@
+import nltk
+import string
+import yaml
+import os
+import sys
+from sklearn.feature_extraction.text import TfidfVectorizer
+from collections import OrderedDict
+from sklearn.metrics.pairwise import linear_kernel
+
+def main(argv):
+    print argv
+    path = os.path.join(os.path.expanduser('~'), 'Documents', 'diss', 'python', 'data.txt')
+    with open(path) as f:
+        all_casts = yaml.safe_load(f.read().encode('utf-8'))
+    stories = get_stories(all_casts)
+
+    vect = TfidfVectorizer(tokenizer = tokenize, stop_words='english')
+    tfidf = vect.fit_transform(stories.values())
+    feature_names = vect.get_feature_names()
+
+    cosine_similarities = linear_kernel(tfidf[0:1], tfidf).flatten()
+    print cosine_similarities
+    related_docs_indices = cosine_similarities.argsort()[:-6:-1]
+    print related_docs_indices
+
+    for el in related_docs_indices:
+        print stories['cast' + `el`]
+    # i = 0
+    # while i < len(stories):
+    #     story = stories['cast' + `i`]
+
+
+
+def get_stories(casts):
+    stories = OrderedDict()
+    i = 0
+    while i < len(casts):
+        key = 'cast' + `i`
+        stories[key] = (casts[key]["name"] + " " + casts[key]["explanation"]).lower().translate(string.maketrans("", ""), string.punctuation)
+        i+=1
+    return stories
+
+
+def tokenize(text):
+    tokens = nltk.word_tokenize(text)
+    return tokens
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
